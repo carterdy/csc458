@@ -100,7 +100,7 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
         uint8_t source = get_ether_source(packet);
         //Check to make sure we haven't sent to this source yet
         if (!array_contains(sources, source)){
-          send_host_runreachable(source, arp_req->ip);
+          send_host_runreachable(source, packet);
           insertArray(&sources, source);
         }
         free(&source);
@@ -112,8 +112,9 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
 /*
   Send a host unreachable ICMP to the given source address
 */
-void send_host_unreachable(uint8_t source, uint32_t dest){
+void send_host_unreachable(uint8_t source, sr_packet *packet){
   //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
+  
 
 }
 
