@@ -147,4 +147,21 @@ int   sr_arpcache_init(struct sr_arpcache *cache);
 int   sr_arpcache_destroy(struct sr_arpcache *cache);
 void *sr_arpcache_timeout(void *cache_ptr);
 
+/*Dynamically sgrowing array from http://stackoverflow.com/questions/3536153/c-dynamically-growing-array
+  mainly used for making sure ICMPs are sent to unique hosts and not every packet*/
+typedef struct {
+  int *array;
+  size_t used;
+  size_t size;
+} Array;
+
+/* Initialize the array with an initial size*/
+void initArray(Array *a, size_t initialSize);
+
+/* Insert an element to the array and increase the array's size*/
+void insertArray(Array *a, int element);
+
+/* Free the array from memory */
+void freeArray(Array *a);
+
 #endif

@@ -16,6 +16,29 @@
 #define ICMP_DESTINATION_UNREACHABLE 3
 #define ICMP_TIME_EXCEED 11
 
+/*Dynamic array implimentation from http://stackoverflow.com/questions/3536153/c-dynamically-growing-array
+*/
+
+void initArray(Array *a, size_t initialSize) {
+  a->array = (int *)malloc(initialSize * sizeof(int));
+  a->used = 0;
+  a->size = initialSize;
+}
+
+void insertArray(Array *a, int element) {
+  if (a->used == a->size) {
+    a->size *= 2;
+    a->array = (int *)realloc(a->array, a->size * sizeof(int));
+  }
+  a->array[a->used++] = element;
+}
+
+void freeArray(Array *a) {
+  free(a->array);
+  a->array = NULL;
+  a->used = a->size = 0;
+}
+
 /*
   Handle the given arpreq.  Re-send the request if need be and alert packet sources waiting on the req if the request is bad.
   Return 0 if the arpreq has been handled or return 1 if the arpreq needs to be destroyed
@@ -36,6 +59,21 @@ int handle_arpreq(struct sr_arpreq *arp_req){
 }
 
 /*
+  Return the source address of the given ethernet packet
+*/
+uint8_t get_ether_source(struct sr_packet *packet){
+  
+  uint8_t *frame = packet->buf;
+  //First 6 bytes of frame = dest, second 6 bytes = source
+  uint8_t *source = malloc(sizeof(uint8_t));
+  int i;
+  for (i = 6; i < 12; i++){
+    source[i] = frame[i];
+  }
+  return source;
+}
+
+/*
   Go through each unique source of the packets waiting on arp_req
   and send a ICMP host unreachable message.
 */
@@ -43,8 +81,8 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
   //For each packet waiting on arp_req, determine unique sources and send them a ICMP.  Have to read packet to find source
   //Go through each packet and for each unique source, send TCMP to say host unreachable
     struct sr_packet *packet = arp_req->packets;
-    while (packet->next){
-        //Have to fix this to determine source and dest
+    while (packet){
+        
         send_host_runreachable(struct sr_arpreq *arp_req);
         packet = packet->next;
     }
