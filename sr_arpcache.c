@@ -24,6 +24,19 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         //        else (time diff >= 1) : 
           //if # times requested >= 5: need to drop request -> go through each packet for request, and tell the source that host unreachable.  Then destroy arpreq *(careful not to lose next requests on queue!)*
           //else(req not brand new but <5 re-sends) : send arprequest again, update time last send and sent count
+    struct sr_arpreq *sweepreq;
+    sweepreq = sr->cache.requests;
+    //There are still request left
+    while (sweepreq != NULL){
+        //from handout we want to check within 5 times, we will send the request
+      if(req->times_sent < 5){
+        //if It was more than 5 times...
+      }else{
+        //do something
+        sweepreq = sweepreq->next;
+      }
+    }
+    
 }
 
 /* You should not need to touch the rest of this code. */
