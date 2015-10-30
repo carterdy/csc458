@@ -27,27 +27,13 @@ int handle_arpreq(struct sr_arpreq *arp_req){
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
-<<<<<<< HEAD
-    struct sr_arpreq *sweepreq;
-    sweepreq = sr->cache.requests;
-    //There are still request left
-    while (sweepreq != NULL){
-      //from handout we want to check within 5 times, we will send the request
-      if(req->times_sent < 5){
-      //if It was more than 5 times...
-      }else{
-      //do something
-      sweepreq = sweepreq->next;
-=======
         //Have to: go through each arprequest in the queue
       //for each one: "handle" the arp request
         //Handle: if arpreq time == current time => req just made, don't touch
         //        else (time diff >= 1) : 
           //if # times requested >= 5: need to drop request -> go through each packet for request, and tell the source that host unreachable.  Then destroy arpreq *(careful not to lose next requests on queue!)*
           //else(req not brand new but <5 re-sends) : send arprequest again, update time last send and sent count
-<<<<<<< HEAD
->>>>>>> origin/master
-=======
+
     struct sr_arpreq *sweepreq;
     struct sr_arpreq *prevreq = sr->cache->requests;
     struct sr_nextreq *nextreq;
@@ -59,18 +45,6 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     sweepreq = prevreq;
     //There are still request left
     while (sweepreq != NULL){
-        //from handout we want to check within 5 times, we will send the request
-<<<<<<< HEAD
-      if(req->times_sent < 5){
-        //if It was more than 5 times...
-      }else{
-        //do something
-        sweepreq = sweepreq->next;
-      }
-    }
-    
->>>>>>> origin/master
-=======
         if (handle_arpreq(sweepreq) == 1){
           //request has been sent too many times. Destroy without losing the request queue. Have to point the previous req to the next req
           if (prevreq == sweepreq){
@@ -91,7 +65,6 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
           prevreq = sweepreq;
           sweepreq = sweepreq->next;
         }
->>>>>>> origin/master
 }
 /* You should not need to touch the rest of this code. */
 
