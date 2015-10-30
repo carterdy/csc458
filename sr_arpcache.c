@@ -70,7 +70,7 @@ uint8_t get_ether_source(struct sr_packet *packet){
   for (i = 6; i < 12; i++){
     source[i] = frame[i];
   }
-  return source;
+  return &source;
 }
 
 /*
@@ -82,7 +82,7 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
   //Go through each packet and for each unique source, send TCMP to say host unreachable
     struct sr_packet *packet = arp_req->packets;
     while (packet){
-        
+        uint8_t = get_ether_source(
         send_host_runreachable(struct sr_arpreq *arp_req);
         packet = packet->next;
     }
