@@ -119,17 +119,17 @@ void send_host_unreachable(uint8_t source, uint32_t dest){
 
 
 /* Make the header for the arp */
-int boardcast_arpreq(struct sr_arpreq *arp_req){
+int boardcast_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
     //get the info into the arp_hdr before sending
+    o_interface = sr_get_interface(sr, arp_req->packets->iface);
     struct sr_arp_hdr arp_hdr;
-    arp_hdr.ar_hrd;             /* format of hardware address   */
+    arp_hdr.ar_hrd = sr_arp_hrd_fmt hfmt = arp_hrd_ethernet;             /* format of hardware address   */
     arp_hdr.ar_pro;             /* format of protocol address   */
-    arp_hdr.ar_hln;             /* length of hardware address   */
-    arp_hdr.ar_pln;             /* length of protocol address   */
-    arp_hdr.ar_op;              /* ARP opcode (command)         */
-    arp_hdr.ar_sha[ETHER_ADDR_LEN];   /* sender hardware address      */
-    arp_hdr.ar_sip;             /* sender IP address            */
-    arp_hdr.ar_tha[ETHER_ADDR_LEN];   /* target hardware address      */
+    arp_hdr.ar_hln = ETHER_ADDR_LEN = 8;             //from http://www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length
+    arp_hdr.ar_pln = 8;             //from http://www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length
+    arp_hdr.ar_op = sr_arp_opcode code = arp_op_request;              /* ARP opcode (command)         */
+    arp_hdr.ar_sha[ETHER_ADDR_LEN] = o_interface.addr;   /* sender hardware address      */
+    arp_hdr.ar_sip = o_interface.ip;             /* sender IP address            */
     arp_hdr.ar_tip =arp_req.ip;                 /* target IP address            */
     //now fit the arp_hdr and send out teh arp
     sr_send();
