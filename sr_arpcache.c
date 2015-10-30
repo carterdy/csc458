@@ -20,10 +20,12 @@ int handle_arpreq(struct sr_arpreq *arp_req){
   //if it tried 5 times...
   if (arp_req->times_sent >5){
     //show some kind of error
+    //Go through each packet and for each unique source, send TCMP to say host unreachable
   }else{
     //...
     //set time = now
     // incrememnt times_sent
+    //Broadcast ARP request
   }
 }
 
