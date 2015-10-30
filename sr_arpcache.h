@@ -150,7 +150,7 @@ void *sr_arpcache_timeout(void *cache_ptr);
 /*Dynamically sgrowing array from http://stackoverflow.com/questions/3536153/c-dynamically-growing-array
   mainly used for making sure ICMPs are sent to unique hosts and not every packet*/
 typedef struct {
-  int *array;
+  uint8_t *array;
   size_t used;
   size_t size;
 } Array;
@@ -159,7 +159,7 @@ typedef struct {
 void initArray(Array *a, size_t initialSize);
 
 /* Insert an element to the array and increase the array's size*/
-void insertArray(Array *a, int element);
+void insertArray(Array *a, uint8_t element);
 
 /* Free the array from memory */
 void freeArray(Array *a);

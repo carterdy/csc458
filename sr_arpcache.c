@@ -20,15 +20,15 @@
 */
 
 void initArray(Array *a, size_t initialSize) {
-  a->array = (int *)malloc(initialSize * sizeof(int));
+  a->array = (uint8_t *)malloc(initialSize * sizeof(uint8_t));
   a->used = 0;
   a->size = initialSize;
 }
 
-void insertArray(Array *a, int element) {
+void insertArray(Array *a, uint8_t element) {
   if (a->used == a->size) {
     a->size *= 2;
-    a->array = (int *)realloc(a->array, a->size * sizeof(int));
+    a->array = (uint8_t *)realloc(a->array, a->size * sizeof(uint8_t));
   }
   a->array[a->used++] = element;
 }
@@ -37,6 +37,19 @@ void freeArray(Array *a) {
   free(a->array);
   a->array = NULL;
   a->used = a->size = 0;
+}
+
+/*
+  Check to see if the given Array a contains element. Return true if it does, and false if not
+*/
+bool array_contains(Array a, uint8_t element){
+  int i;
+  for (i = 0; i < a.used; i++){
+    if (a.array[i] == element){
+      return true;
+    }
+  }
+  return false;
 }
 
 /*
@@ -65,7 +78,7 @@ uint8_t get_ether_source(struct sr_packet *packet){
   
   uint8_t *frame = packet->buf;
   //First 6 bytes of frame = dest, second 6 bytes = source
-  uint8_t *source = malloc(sizeof(uint8_t));
+  uint8_t *source = (uint8_t *)malloc(sizeof(uint8_t));
   int i;
   for (i = 6; i < 12; i++){
     source[i] = frame[i];
@@ -81,17 +94,25 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
   //For each packet waiting on arp_req, determine unique sources and send them a ICMP.  Have to read packet to find source
   //Go through each packet and for each unique source, send TCMP to say host unreachable
     struct sr_packet *packet = arp_req->packets;
+    Array sources;
+    initArray(&a, 1);
     while (packet){
-        uint8_t = get_ether_source(
-        send_host_runreachable(struct sr_arpreq *arp_req);
+        uint8_t source = get_ether_source(packet);
+        //Check to make sure we haven't sent to this source yet
+        if (!array_contains(sources, source)){
+          send_host_runreachable(source, arp_req->ip);
+          insertArray(&sources, source);
+        }
+        free(&source);
         packet = packet->next;
     }
+    freeArray(&sources);
 }
 
 /*
   Send a host unreachable ICMP to the given source address
 */
-void send_host_unreachable(uint32_t source, uint32_t dest){
+void send_host_unreachable(uint8_t source, uint32_t dest){
   //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
 
 }
