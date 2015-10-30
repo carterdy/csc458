@@ -20,13 +20,36 @@ int handle_arpreq(struct sr_arpreq *arp_req){
   //if it tried 5 times...
   if (arp_req->times_sent >5){
     //show some kind of error
-    //Go through each packet and for each unique source, send TCMP to say host unreachable
+    //Go through each packet and for each unique source, send ICMP to say host unreachable
+    notify_sources_badreq(arp_req);
   }else{
     //...
     //set time = now
     // incrememnt times_sent
     //Broadcast ARP request
   }
+}
+
+/*
+  Go through each unique source of the packets waiting on arp_req
+  and send a ICMP host unreachable message.
+*/
+void notify_sources_badreq(struct sr_arpreq *arp_req){
+  //For each packet waiting on arp_req, determine unique sources and send them a ICMP.  Have to read packet to find source
+}
+
+/*
+  Send a host unreachable ICMP to the given source address
+*/
+void send_host_unreachable(uint32_t source, uint32_t dest){
+  //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
+}
+
+/*
+  Broadcast the given arp request.
+*/
+void broadcast_arpreq(struct sr_arpreq *arp_req){
+
 }
 
 /* 
