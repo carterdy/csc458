@@ -18,6 +18,14 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
+    struct sr_arpreq *sweepreq;
+    //There are still request left
+    while (sweepreq != NULL){
+      if(req->times_sent < 5){
+		//do something
+       }else{
+
+}
 }
 
 /* You should not need to touch the rest of this code. */
