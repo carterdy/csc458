@@ -17,7 +17,14 @@
   Return 0 if the arpreq has been handled or return 1 if the arpreq needs to be destroyed
 */
 int handle_arpreq(struct sr_arpreq *arp_req){
-  
+  //if it tried 5 times...
+  if (arp_req->times_sent >5){
+    //show some kind of error
+  }else{
+    //...
+    //set time = now
+    // incrememnt times_sent
+  }
 }
 
 /* 
