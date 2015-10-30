@@ -17,7 +17,7 @@
   Return 0 if the arpreq has been handled or return 1 if the arpreq needs to be destroyed
 */
 int handle_arpreq(struct sr_arpreq *arp_req){
-  //stuff in here
+  
 }
 
 /* 
@@ -35,21 +35,31 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
           //else(req not brand new but <5 re-sends) : send arprequest again, update time last send and sent count
     struct sr_arpreq *sweepreq;
     struct sr_arpreq *prevreq = sr->cache->requests;
+    struct sr_nextreq *nextreq;
     //There are no requests!
     if (prevreq == NULL){
       return;
     }
     
-    sweepreq = sr->cache->requests->next;
+    sweepreq = prevreq;
     //There are still request left
     while (sweepreq != NULL){
         //from handout we want to check within 5 times, we will send the request
         if (handle_arpreq(sweepreq) == 1){
           //request has been sent too many times. Destroy without losing the request queue. Have to point the previous req to the next req
-          struct sr_arpreq *nextreq = sweepreq->next;
-          prevreq->next = nextreq;
-          sr_arpreq_destroy(sweepreq);
-          sweepreq = nextreq;
+          if (prevreq == sweepreq){
+            //Handle the case of the first request
+            sr->cache->requests = sweepreq->next;
+            sweepreq = sweepreq->next;
+            nextreq = sweepreg->next;
+            sr_arpreq_destroy(prevreq);
+            prevreq = sweepreq;
+          } else {
+            nextreq = sweepreq->next;
+            prevreq->next = nextreq;
+            sr_arpreq_destroy(sweepreq);
+            sweepreq = nextreq;
+          }
         } else {
           //No deletion to be made. Just update previous and current request
           prevreq = sweepreq;
