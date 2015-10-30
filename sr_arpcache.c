@@ -19,15 +19,16 @@
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
     /* Fill this in */
     struct sr_arpreq *sweepreq;
+    sweepreq = sr->cache.requests;
     //There are still request left
     while (sweepreq != NULL){
+      //from handout we want to check within 5 times, we will send the request
       if(req->times_sent < 5){
-		//do something
-       }else{
-
+      //if It was more than 5 times...
+      }else{
+      //do something
+      sweepreq = sweepreq->next;
 }
-}
-
 /* You should not need to touch the rest of this code. */
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order.
