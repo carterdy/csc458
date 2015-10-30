@@ -11,6 +11,15 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 
+
+/*
+  Handle the given arpreq.  Re-send the request if need be and alert packet sources waiting on the req if the request is bad.
+  Return 0 if the arpreq has been handled or return 1 if the arpreq needs to be destroyed
+*/
+int handle_arpreq(struct sr_arpreq *arp_req){
+  //stuff in here
+}
+
 /* 
   This function gets called every second. For each request sent out, we keep
   checking whether we should resend an request or destroy the arp request.
@@ -25,18 +34,27 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
           //if # times requested >= 5: need to drop request -> go through each packet for request, and tell the source that host unreachable.  Then destroy arpreq *(careful not to lose next requests on queue!)*
           //else(req not brand new but <5 re-sends) : send arprequest again, update time last send and sent count
     struct sr_arpreq *sweepreq;
-    sweepreq = sr->cache.requests;
+    struct sr_arpreq *prevreq = sr->cache->requests;
+    //There are no requests!
+    if (prevreq == NULL){
+      return;
+    }
+    
+    sweepreq = sr->cache->requests->next;
     //There are still request left
     while (sweepreq != NULL){
         //from handout we want to check within 5 times, we will send the request
-      if(req->times_sent < 5){
-        //if It was more than 5 times...
-      }else{
-        //do something
-        sweepreq = sweepreq->next;
-      }
-    }
-    
+        if (handle_arpreq(sweepreq) == 1){
+          //request has been sent too many times. Destroy without losing the request queue. Have to point the previous req to the next req
+          struct sr_arpreq *nextreq = sweepreq->next;
+          prevreq->next = nextreq;
+          sr_arpreq_destroy(sweepreq);
+          sweepreq = nextreq;
+        } else {
+          //No deletion to be made. Just update previous and current request
+          prevreq = sweepreq;
+          sweepreq = sweepreq->next;
+        }
 }
 
 /* You should not need to touch the rest of this code. */
