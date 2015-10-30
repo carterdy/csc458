@@ -12,12 +12,16 @@
 #include "sr_protocol.h"
 
 
+//all icmp type obtained from http://www.nthelp.com/icmp.html
+#define ICMP_DESTINATION_UNREACHABLE 3
+#define ICMP_TIME_EXCEED 11
+
 /*
   Handle the given arpreq.  Re-send the request if need be and alert packet sources waiting on the req if the request is bad.
   Return 0 if the arpreq has been handled or return 1 if the arpreq needs to be destroyed
 */
 int handle_arpreq(struct sr_arpreq *arp_req){
-  //if it tried 5 times...
+  //if it tried 5 times... destination is unreachable
   if (arp_req->times_sent >5){
     //show some kind of error
     //Go through each packet and for each unique source, send ICMP to say host unreachable
@@ -27,6 +31,7 @@ int handle_arpreq(struct sr_arpreq *arp_req){
     //set time = now
     // incrememnt times_sent
     //Broadcast ARP request
+    boardcast_arpreq(arp_req);
   }
 }
 
@@ -36,6 +41,13 @@ int handle_arpreq(struct sr_arpreq *arp_req){
 */
 void notify_sources_badreq(struct sr_arpreq *arp_req){
   //For each packet waiting on arp_req, determine unique sources and send them a ICMP.  Have to read packet to find source
+  //Go through each packet and for each unique source, send TCMP to say host unreachable
+    struct sr_packet *packet = arp_req->packets;
+    while (packet->next){
+        //Have to fix this to determine source and dest
+        send_host_runreachable(struct sr_arpreq *arp_req);
+        packet = packet->next;
+    }
 }
 
 /*
@@ -43,13 +55,25 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
 */
 void send_host_unreachable(uint32_t source, uint32_t dest){
   //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
+
 }
 
-/*
-  Broadcast the given arp request.
-*/
-void broadcast_arpreq(struct sr_arpreq *arp_req){
 
+/* Make the header for the arp */
+int boardcast_arpreq(struct sr_arpreq *arp_req){
+    //get the info into the arp_hdr before sending
+    struct sr_arp_hdr arp_hdr;
+    arp_hdr.ar_hrd;             /* format of hardware address   */
+    arp_hdr.ar_pro;             /* format of protocol address   */
+    arp_hdr.ar_hln;             /* length of hardware address   */
+    arp_hdr.ar_pln;             /* length of protocol address   */
+    arp_hdr.ar_op;              /* ARP opcode (command)         */
+    arp_hdr.ar_sha[ETHER_ADDR_LEN];   /* sender hardware address      */
+    arp_hdr.ar_sip;             /* sender IP address            */
+    arp_hdr.ar_tha[ETHER_ADDR_LEN];   /* target hardware address      */
+    arp_hdr.ar_tip =arp_req.ip;                 /* target IP address            */
+    //now fit the arp_hdr and send out teh arp
+    sr_send();
 }
 
 /* 
@@ -98,6 +122,8 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
           sweepreq = sweepreq->next;
         }
 }
+
+
 /* You should not need to touch the rest of this code. */
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order.
