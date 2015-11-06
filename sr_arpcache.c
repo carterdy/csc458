@@ -56,19 +56,25 @@ bool array_contains(Array a, uint8_t element){
   Handle the given arpreq.  Re-send the request if need be and alert packet sources waiting on the req if the request is bad.
   Return 0 if the arpreq has been handled or return 1 if the arpreq needs to be destroyed
 */
-int handle_arpreq(struct sr_arpreq *arp_req){
+int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
   //if it tried 5 times... destination is unreachable
   if (arp_req->times_sent >5){
-    //show some kind of error
     //Go through each packet and for each unique source, send ICMP to say host unreachable
     notify_sources_badreq(arp_req);
+
   }else{
-    //...
-    //set time = now
-    // incrememnt times_sent
-    //Broadcast ARP request
-    boardcast_arpreq(arp_req);
+    //look at the routing table and see if there's a match
+    if (rtable_look_up(arp_req)==1){
+        // incrememnt times_sent
+        arp_req->times_sent++;
+        //Broadcast ARP request
+        boardcast_arpreq(arp_req);
+    }else{
+        notify_sources_badreq(arp_req);
+
+    }
   }
+  return 1;
 }
 
 /*
@@ -86,11 +92,12 @@ uint8_t get_ether_source(struct sr_packet *packet){
   return &source;
 }
 
+
 /*
   Go through each unique source of the packets waiting on arp_req
   and send a ICMP host unreachable message.
 */
-void notify_sources_badreq(struct sr_arpreq *arp_req){
+void notify_sources_badreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
   //For each packet waiting on arp_req, determine unique sources and send them a ICMP.  Have to read packet to find source
   //Go through each packet and for each unique source, send TCMP to say host unreachable
     struct sr_packet *packet = arp_req->packets;
@@ -113,28 +120,74 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
   Send a host unreachable ICMP to the given source address
 */
 void send_host_unreachable(uint8_t source, uint32_t dest){
+  struct sr_icmp_hdr icmp_hdr;
   //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
+  //first create a type 3 icmp header...
+  icmp_hdr.icmp_type = ICMP_DESTINATION_UNREACHABLE;
 
+  icmp_hdr.icmp_code = 1; //1  Host Unreachable from http://www.nthelp.com/icmp.html
+  icmp_hdr.icmp_sum = 0;
+  icmp_hdr.unused = 0;
+  icmp_hdr.next_mtu = 0;
+  uint8_t data[ICMP_DATA_SIZE];
+  //then we also need to create a ip header
+
+
+  //create the packet
+  //then package the ethernet header along with the arp header...
+  eth_hdr_package(uint8_t  ether_dhost, sr, o_interface->addr, arp_package, int len);
+  //send it out
+  sr_send_packet(sr, e_pack, sizeof(struct sr_arp_hdr) + sizeof(struct sr_ethernet_hdr), o_interface);
 }
 
 
-/* Make the header for the arp */
+/* prepare arp into ethernet frame and send it */
 int boardcast_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
-    //get the info into the arp_hdr before sending
+    struct sr_if *o_interface;
+    //first package the arp package header first...
     o_interface = sr_get_interface(sr, arp_req->packets->iface);
     struct sr_arp_hdr arp_hdr;
+    int *arp_package;
+    int *e_pack;
     arp_hdr.ar_hrd = sr_arp_hrd_fmt hfmt = arp_hrd_ethernet;             /* format of hardware address   */
-    arp_hdr.ar_pro;             /* format of protocol address   */
-    arp_hdr.ar_hln = ETHER_ADDR_LEN = 8;             //from http://www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length
+    arp_hdr.ar_pro = 0X800;            //from http://www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length
+    arp_hdr.ar_hln = ETHER_ADDR_LEN = 8; //from http://www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length
     arp_hdr.ar_pln = 8;             //from http://www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length
-    arp_hdr.ar_op = sr_arp_opcode code = arp_op_request;              /* ARP opcode (command)         */
-    arp_hdr.ar_sha[ETHER_ADDR_LEN] = o_interface.addr;   /* sender hardware address      */
+    sr_arp_opcode code = arp_op_request;
+    arp_hdr.ar_op = code;              /* ARP opcode (command)         */
+    memcpy(arp_hdr.ar_sha, o_interface->addr, ETHER_ADDR_LEN); /* sender hardware address      */
     arp_hdr.ar_sip = o_interface.ip;             /* sender IP address            */
-    arp_hdr.ar_tip =arp_req.ip;                 /* target IP address            */
-    //now fit the arp_hdr and send out teh arp
-    sr_send();
-}
+    arp_hdr.ar_tip = arp_req.ip;                 /* target IP address            */
+    //copy everything into the arp_header
+    arp_package = malloc(sizeof(sr_arp_hdr_t));
+    memcpy(arp_package, &apr_hdr, sizeof(sr_arp_hdr_t));
+    //then package the ethernet header along with the arp header...
+    e_pack = eth_hdr_package(uint8_t  ether_dhost, sr, o_interface->addr, arp_package, sizeof(struct sr_arp_hdr));
 
+    //send it out
+    sr_send_packet(sr, e_pack, sizeof(struct sr_arp_hdr) + sizeof(struct sr_ethernet_hdr), o_interface);
+
+
+
+/* build the ethernet frame to be broadcast */
+int eth_hdr_package(uint8_t  ether_dhost, uint8_t  ether_shost, uint16_t ether_type, int *content, int len){
+    int *output;
+    int total_length;
+    struct sr_ethernet_hdr e_hdr;
+    //first step is to create a ethernet header...
+    memcpy(e_hdr.ether_dhost,ether_dhost,ETHER_ADDR_LEN); /* destination ethernet address */
+    memcpy(e_hdr.ether_shost,ether_shost,ETHER_ADDR_LEN); /* source ethernet address */
+    e_hdr.ether_type = ether_type;
+    //calculate the length of the entire thing...
+    total_length = sizeof(sr_ethernet_hdr_t) + len;
+    //put everything together
+    output = malloc(total_length);
+    //put the ethernet header in the front
+    memcpy(output, &e_hdr, sizeof(sr_ethernet_hdr_t));
+    memcpy(output + sizeof(sr_ethernet_hdr_t), content,len);
+    return output;
+    
+}
 /* 
   This function gets called every second. For each request sent out, we keep
   checking whether we should resend an request or destroy the arp request.
