@@ -64,7 +64,7 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
 
   }else{
     //look at the routing table and see if there's a match
-    if (rtable_look_up(arp_req)==1){
+    if (rtable_look_up(sr, arp_req)==1){
         // incrememnt times_sent
         arp_req->times_sent++;
         //Broadcast ARP request
@@ -76,6 +76,23 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
   }
   return 1;
 }
+
+/* Look through the routing table and see if there is any prefix matched */
+int rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req)={
+    struct sr_rt* curl;
+    struct sr_rt* matched;
+    int longest = 0;
+    cur = sr->routing_table;
+    while (cur){
+        if ((cur->dest.s_addr & cur->mask.s_addr) == (arp_req.ip & cur->mask.s_addr)){
+            return 1;
+
+            }
+            cur = cur->next;
+        }
+    return 0;
+
+    }
 
 /*
   Return the source address of the given ethernet packet
@@ -129,9 +146,16 @@ void send_host_unreachable(uint8_t source, uint32_t dest){
   icmp_hdr.icmp_sum = 0;
   icmp_hdr.unused = 0;
   icmp_hdr.next_mtu = 0;
-  uint8_t data[ICMP_DATA_SIZE];
+  //uint8_t data[ICMP_DATA_SIZE];
   //then we also need to create a ip header
-
+  uint8_t ip_tos;           /* type of service */
+  uint16_t ip_len;            /* total length */
+  uint16_t ip_id;         /* identification */
+  uint16_t ip_off;            /* fragment offset field */
+  uint8_t ip_ttl = 64;         /* time to live from http://www.iana.org/assignments/ip-parameters/ip-parameters.xhtml#ip-parameters-2 */
+  uint8_t ip_p;           /* protocol */
+  uint16_t ip_sum;            /* checksum */
+  uint32_t ip_src, ip_dst;    /* source and dest address */
 
   //create the packet
   //then package the ethernet header along with the arp header...
