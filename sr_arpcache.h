@@ -81,6 +81,7 @@ struct sr_packet {
     struct sr_packet *next;
 };
 
+
 struct sr_arpentry {
     unsigned char mac[6]; 
     uint32_t ip;                /* IP addr in network byte order */
@@ -163,5 +164,7 @@ void insertArray(Array *a, uint8_t element);
 
 /* Free the array from memory */
 void freeArray(Array *a);
+
+/*  Other functions we've added */
 
 #endif

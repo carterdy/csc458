@@ -112,10 +112,48 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
 /*
   Send a host unreachable ICMP to the given source address
 */
-void send_host_unreachable(uint8_t source, sr_packet *packet){
-  //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
-  
+void send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr){
+  /* Trying to work on this - Dylan */
 
+  //Create and send the host unreachable ICMP TO source, telling them that dest was unreachable
+  //First have to create the ICMP packet
+  sr_icmp_t3_hdr_t icmp_packet;
+  icmp_packet.icmp_type = 3;
+  icmp_packet.icmp_code = 1;
+  icmp_packet.icmp_sum = 0;
+  icmp_packet.icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
+  //Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.
+  memcpy(icmp_packet.data, ICMP_DATA_SIZE);
+  
+  //Now have to form the ip packet to encase the icmp content
+  sr_ip_hdr_t ip_packet;
+  ip_packet.ip_p = 1;
+  ip_packet.ip_tos;			/* type of service */
+  ip_packet.ip_len;			/* total length */
+  ip_packet.ip_id;			/* identification */
+  ip_packet.ip_off;			/* fragment offset field */
+  ip_packet.ip_ttl;			/* time to live */
+  pi_packet.ip_p = 1;			/* protocol */
+  ip_packet.ip_sum;			/* checksum */
+  ip_packet.ip_src = sr->if_list[0]->ip;  //Assign the packet source to one of the router's interfaces
+  ip_packet.ip_dst;	//set the packet destination to the original source IP
+  
+  //Now make an ethernet frame to wrap the IP packet with the ICMP packet
+  sr_ethernet_hdr_t ether_packet;
+  ether_packet.ether_dhost;  //Set ethernet destination
+  ether_packet.ether_shost = sr->if_list[0]->addr;  //Set ethernet source
+  ether_packet.ether_type = sr_ethertype.ethertype_ip;
+  
+  //Now load all this into one buffer and send it as a packet through the interface
+  int size = 32+20+8+28; //Size of the packet. Ether header = 32, ip header = 20, ICMP header = 8, ICMP data = 28.
+  uint8_t *buf = malloc(size);
+  memcpy((void *)ether_packet.ether_dhost, (void *)buf, ETHER_ADDR_LEN);
+  memcpy((void *)ether_packet.ether_shost, (void *)buf[6], ETHER_ADDR_LEN);
+  memcpy((void *)ether_packet.ether_type, (void *)buf[12], 2);
+  memcpy((void *)ip_packet.ip_hl, (void *)buf[14], 2);
+  memcpy((void *)ip_packet.ip_v, (void *)buf[16], 2);
+  memcpy((void *)ip_packet.ip_tos, (void *)buf[18], 1);
+  
 }
 
 
