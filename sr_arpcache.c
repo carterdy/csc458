@@ -196,7 +196,6 @@ int boardcast_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
     //first package the arp package header first...
     o_interface = sr_get_interface(sr, arp_req->packets->iface);
     struct sr_arp_hdr arp_hdr;
-<<<<<<< HEAD
     int *arp_package;
     int *e_pack;
     arp_hdr.ar_hrd = sr_arp_hrd_fmt hfmt = arp_hrd_ethernet;             /* format of hardware address   */

@@ -52,6 +52,23 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+
+/*
+*  If the given router instance has IP address addr as one of its interface's addresses, return that interface's ethernet address.
+*  Return NULL otherwise.
+*/
+unsigned char* sr_contains_ip(struct sr_instance* sr, uint32_t addr){
+
+  struct sr_if* curr_if = sr->if_list;
+  while (curr_if != NULL) {
+    if (curr_if->ip == addr){
+      return curr_if->addr;
+    }
+    curr_if = curr_if->next;
+  }
+  return NULL;
+}
+
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
  * Scope:  Global
@@ -83,8 +100,30 @@ void sr_handlepacket(struct sr_instance* sr,
   /* fill in code here */
   //it is ARP...
   if (sr_ethertype(packet)== ethertype_arp ){
+    //First lets extract the ARP packet
+    sr_arp_hdr_t *arp_packet = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+  
+    //If it is a broadcast ARP request and we have the IP, send a reply. Otherwise ignore.
+    if (arp_packet->ar_op == 1 && arp_packet->ar_tha == "ffffffffffff") {
+      //Have to go through all the interfaces and see if the requested IP matches any of them
+      unsigned char if_addr[ETHER_ADDR_LEN];
+      strncpy(if_addr, sr_contains_ip(sr, arp_packet->ar_ip), ETHER_ADDR_LEN);
+      if (if_addr) {
+        //Generate and send ARP reply
+        uint8_t *arp_reply = sr_create_arp_reply();
+      }
+    }
+    
+    
+    //If it is an ARP reply, cache only if the target IP is one of our interfaces
 
   }else if (sr_ethertype(packet)== ethertype_ip ){//it is ip...
+    //Check if packet is ICMP echo.  If it is echo for us need to create and send reply.
+    //If it is echo not for us, need to forward to destination
+    
+    //If packet is ICMP not meant for us, need to forward it.
+    
+    //If packet is TCP/UDP need to reply with host unreachable
 
   }
 
