@@ -141,10 +141,15 @@ void sr_handlepacket(struct sr_instance* sr,
         uint8_t *arp_reply = sr_create_arp_reply(found_if->addr, found_if->ip, arp_packet->ar_sha, arp_packet->ar_sip);
         sr_send_packet(sr, arp_reply, sizeof(erp_reply), interface);  //Send off the packet
       }
+    } else if (arp_packet->ar_op == arp_op_reply) {
+      //If it is an ARP reply, cache only if the target IP is one of our interfaces
+      char if_name[sr_IFACE_NAMELEN];
+      strncpy(if_name, sr_contains_ip(sr, arp_packet->ar_ip), sr_IFACE_NAMELEN);
+      if (if_name) {
+          //Cache the ARP
+          sr_arpcache_insert(sr->cache, arp_packet->ar_sha, arp_packet->ar_sip);
+      }
     }
-    
-    
-    //If it is an ARP reply, cache only if the target IP is one of our interfaces
 
   }else if (sr_ethertype(packet)== ethertype_ip ){//it is ip...
     //Check if packet is ICMP echo.  If it is echo for us need to create and send reply.
