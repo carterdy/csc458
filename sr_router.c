@@ -54,19 +54,46 @@ void sr_init(struct sr_instance* sr)
 
 
 /*
-*  If the given router instance has IP address addr as one of its interface's addresses, return that interface's ethernet address.
+*  If the given router instance has IP address addr as one of its interface's addresses, return that interface's name.
 *  Return NULL otherwise.
 */
-unsigned char* sr_contains_ip(struct sr_instance* sr, uint32_t addr){
+char* sr_contains_ip(struct sr_instance* sr, uint32_t addr){
 
   struct sr_if* curr_if = sr->if_list;
   while (curr_if != NULL) {
     if (curr_if->ip == addr){
-      return curr_if->addr;
+      return curr_if->name;
     }
     curr_if = curr_if->next;
   }
   return NULL;
+}
+
+/*
+*  Create an ARP reply packet for the given destination address on behalf of the given reply address.
+*/
+uint8_t* sr_create_arp_reply(unsigned char* sender_eth, uint32_t sender_ip, unsigned char* dest_eth, uint32_t dest_ip){
+  //Create the packet buffer and create structs for the ethernet header and arp header for easy packet creation
+  uint8_t* buf = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+  sr_ethernet_hdr_t* ether_packet = (sr_ethernet_hdr_t *)(buf);
+  sr_arp_hdr_t* arp_packet = (sr_arp_hdr_t *)(buf+sizeof(sr_ethernet_hdr_t);
+  
+  ether_packet->ether_dhost = dest_eth;
+  ether_packet->ether_shost = sender_eth;
+  ether_packet->ether_type = ethertype_arp;
+  
+  arp_packet->ar_hdr = arp_hdr_ethernet;
+  arp_packet->ar_pro = ethertype_ip;
+  arp_packet->ar_hln = ETHER_ADDR_LEN;
+  arp_packet->ar_pln = 4; //Hard coded but couldn't think of a better option
+  arp_packet->ar_op = arp_op_reply;
+  arp_packet->ar_sha = sender_eth;
+  arp_packet->ar_sip = sender_ip;
+  arp_packet->ar_tha = dest_eth;
+  arp_packet->ar_tip = dest_ip;
+  
+  return buf;
+  
 }
 
 /*---------------------------------------------------------------------
@@ -104,13 +131,15 @@ void sr_handlepacket(struct sr_instance* sr,
     sr_arp_hdr_t *arp_packet = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
   
     //If it is a broadcast ARP request and we have the IP, send a reply. Otherwise ignore.
-    if (arp_packet->ar_op == 1 && arp_packet->ar_tha == "ffffffffffff") {
+    if (arp_packet->ar_op == sr_arp_opcode.arp_op_request && arp_packet->ar_tha == "ffffffffffff") {
       //Have to go through all the interfaces and see if the requested IP matches any of them
-      unsigned char if_addr[ETHER_ADDR_LEN];
-      strncpy(if_addr, sr_contains_ip(sr, arp_packet->ar_ip), ETHER_ADDR_LEN);
-      if (if_addr) {
+      char if_name[sr_IFACE_NAMELEN];
+      strncpy(if_name, sr_contains_ip(sr, arp_packet->ar_ip), sr_IFACE_NAMELEN);
+      if (if_name) {
         //Generate and send ARP reply
-        uint8_t *arp_reply = sr_create_arp_reply();
+        struct sr_if* found_if = sr_get_interface(sr, if_name);
+        uint8_t *arp_reply = sr_create_arp_reply(found_if->addr, found_if->ip, arp_packet->ar_sha, arp_packet->ar_sip);
+        sr_send_packet(sr, arp_reply, sizeof(erp_reply), interface);  //Send off the packet
       }
     }
     

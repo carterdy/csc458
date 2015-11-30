@@ -72,7 +72,12 @@ void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
 *  Return true if the given router instance has IP address addr as one of its interface's addresses.
 *  Return false otherwise.
 */
-bool sr_contains_ip(struct sr_instance* sr, uint32_t addr;
+unsigned char* sr_contains_ip(struct sr_instance* sr, uint32_t addr);
+
+/*
+*  Create an ARP reply packet for the given destination address on behalf of the given reply address.
+*/
+uint8_t* sr_create_arp_reply(unsigned char* sender_eth, uint32_t sender_ip, unsigned char* dest_eth, uint32_t dest_ip);
 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );
