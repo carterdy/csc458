@@ -62,12 +62,14 @@ int handle_arpreq(struct sr_arpreq *arp_req){
     //show some kind of error
     //Go through each packet and for each unique source, send ICMP to say host unreachable
     notify_sources_badreq(arp_req);
+    return 1;
   }else{
     //...
     //set time = now
     // incrememnt times_sent
     //Broadcast ARP request
     boardcast_arpreq(arp_req);
+    return 0;
   }
 }
 
