@@ -167,4 +167,10 @@ void freeArray(Array *a);
 
 /*  Other functions we've added */
 
+/*  Extract and return the ip address from the IP header encapsulated by the given ethernet packet.  */
+uint32_t get_ip_addr(sr_packet *packet);
+
+/*  Extract and return the ethernet address from the given ethernet packet.  */
+uint32_t get_ether_addr(sr_packet *packet);
+
 #endif

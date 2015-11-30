@@ -86,6 +86,7 @@ uint8_t get_ether_source(struct sr_packet *packet){
   return &source;
 }
 
+
 /*
   Go through each unique source of the packets waiting on arp_req
   and send a ICMP host unreachable message.
@@ -97,7 +98,7 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
     Array sources;
     initArray(&a, 1);
     while (packet){
-        uint8_t source = get_ether_source(packet);
+        uint8_t source[ETHER_ADDR_LEN] = get_ether_source(packet);
         //Check to make sure we haven't sent to this source yet
         if (!array_contains(sources, source)){
           send_host_runreachable(source, packet);
@@ -107,6 +108,15 @@ void notify_sources_badreq(struct sr_arpreq *arp_req){
         packet = packet->next;
     }
     freeArray(&sources);
+}
+
+/*  Extract and return the ip address from the IP header encapsulated by the given ethernet packet.  */
+uint32_t get_ip_addr(sr_packet *packet){
+  //We know that the ethernet header is 32 bytes long, and the source address in the IP header is at the 12th octet
+  uint32_t address;
+  address = (uint32_t)(packet->buf[32+12*8]);
+  return address;
+
 }
 
 /*
@@ -139,17 +149,17 @@ void send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_ins
   ip_packet->ip_p = 1;			/* protocol */
   ip_packet->ip_sum;			/* checksum */
   ip_packet->ip_src = sr->if_list[0]->ip;  //Assign the packet source to one of the router's interfaces
-  ip_packet->ip_dst;	//set the packet destination to the original source IP
+  ip_packet->ip_dst = get_ip_addr(packet);	//set the packet destination to the original source IP
   
   //Now make an ethernet frame to wrap the IP packet with the ICMP packet
   sr_ethernet_hdr_t *ether_packet = (sr_ethernet_hdr_t *)(buf);
-  ether_packet->ether_dhost;  //Set ethernet destination
+  ether_packet->ether_dhost = source_addr;  //Set ethernet destination
   ether_packet->ether_shost = sr->if_list[0]->addr;  //Set ethernet source
   ether_packet->ether_type = sr_ethertype.ethertype_ip;
   
   //Now send off the packet
   int size = 32+20+8+28; //Size of the packet. Ether header = 32, ip header = 20, ICMP header = 8, ICMP data = 28.
-  sr_send_packet(sr, buf, size, sr->if_list[0]->name);
+  sr_send_packet(sr, buf, size, sr->if_list);
   
 }
 
@@ -167,7 +177,7 @@ int boardcast_arpreq(struct sr_arpreq *arp_req){
     arp_hdr.ar_sip;             /* sender IP address            */
     arp_hdr.ar_tha[ETHER_ADDR_LEN];   /* target hardware address      */
     arp_hdr.ar_tip =arp_req.ip;                 /* target IP address            */
-    //now fit the arp_hdr and send out teh arp
+    //now fit the arp_hdr and send out the arp
     sr_send();
 }
 
