@@ -81,6 +81,7 @@ struct sr_packet {
     struct sr_packet *next;
 };
 
+
 struct sr_arpentry {
     unsigned char mac[6]; 
     uint32_t ip;                /* IP addr in network byte order */
@@ -163,5 +164,13 @@ void insertArray(Array *a, uint8_t element);
 
 /* Free the array from memory */
 void freeArray(Array *a);
+
+/*  Other functions we've added */
+
+/*  Extract and return the ip address from the IP header encapsulated by the given ethernet packet.  */
+uint32_t get_ip_addr(sr_packet *packet);
+
+/*  Extract and return the ethernet address from the given ethernet packet.  */
+uint32_t get_ether_addr(sr_packet *packet);
 
 #endif
