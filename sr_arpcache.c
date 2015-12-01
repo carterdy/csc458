@@ -65,7 +65,7 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
 
   }else{
     //look at the routing table and see if there's a match
-    if (rtable_look_up(sr, arp_req)==1){
+    if (rtable_look_up(sr, arp_req)!= 0){
         // incrememnt times_sent
         arp_req->times_sent++;
         //Broadcast ARP request
@@ -81,7 +81,7 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
 
 /* Look through the routing table and see if there is any prefix matched */
 int rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req)={
-    struct sr_rt* curl;
+    struct sr_rt* cur;
     struct sr_rt* matched;
     int longest = 0;
     cur = sr->routing_table;
