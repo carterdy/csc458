@@ -96,6 +96,8 @@ uint8_t* sr_create_arp_reply(unsigned char* sender_eth, uint32_t sender_ip, unsi
   
 }
 
+
+
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
  * Scope:  Global
@@ -153,11 +155,25 @@ void sr_handlepacket(struct sr_instance* sr,
 
   }else if (sr_ethertype(packet)== ethertype_ip ){//it is ip...
     //Check if packet is ICMP echo.  If it is echo for us need to create and send reply.
+
+    
     //If it is echo not for us, need to forward to destination
-    
+    extrac_ip_hdr(ip_hdr);// suppose to be the ip header we extract from packet... finish this later
     //If packet is ICMP not meant for us, need to forward it.
-    
-    //If packet is TCP/UDP need to reply with host unreachable
+    if (sr_contains_ip(sr ,ip_hdr)){
+
+      //we need to modify icmp unreachable function into echo reply
+      if (ip_hdr->ip_p == 1){// number for icmp
+
+      
+      send_echo_reply(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr);
+      }else{
+      //If packet is TCP/UDP need to reply with host unreachable
+      send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr);//filll in later
+      }
+    }else { //not for us... forward it
+      forward_packet(sr,ip_hdr);
+    }
 
   }
 
