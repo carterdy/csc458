@@ -155,24 +155,29 @@ void sr_handlepacket(struct sr_instance* sr,
 
   }else if (sr_ethertype(packet)== ethertype_ip ){//it is ip...
     //Check if packet is ICMP echo.  If it is echo for us need to create and send reply.
-
+    sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
     
     //If it is echo not for us, need to forward to destination
-    extrac_ip_hdr(ip_hdr);// suppose to be the ip header we extract from packet... finish this later
-    //If packet is ICMP not meant for us, need to forward it.
-    if (sr_contains_ip(sr ,ip_hdr)){
+    
+    //If this packet is for us :)
+    if (sr_contains_ip(sr ,ip_packet)){
 
       //we need to modify icmp unreachable function into echo reply
-      if (ip_hdr->ip_p == 1){// number for icmp
-
-      
-      send_echo_reply(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr);
+      if (ip_packet->ip_p == 1){// number for icmp
+        send_echo_reply(ip_packet->ip_src,packet, sr);
       }else{
       //If packet is TCP/UDP need to reply with host unreachable
-      send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr);//filll in later
+        send_host_unreachable(ip_packet->ip_src,packet, sr);
       }
-    }else { //not for us... forward it
-      forward_packet(sr,ip_hdr);
+    }else { //If packet is ICMP not meant for us, need to forward it.
+      ip_packet->ip_ttl--;  
+      //if the time to live is 0... we send an icmp
+      if (ip_packet->ip_ttl ==0){
+        send_times_up(ip_packet->ip_src,packet, sr);
+      }
+      int size = 32+20+8+28;
+      sr_send_packet(sr, packet, size, sr->if_list);
+}
     }
 
   }
