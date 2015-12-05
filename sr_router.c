@@ -169,18 +169,28 @@ void sr_handlepacket(struct sr_instance* sr,
       //If packet is TCP/UDP need to reply with host unreachable
         send_host_unreachable(ip_packet->ip_src,packet, sr);
       }
+    
+
+
     }else { //If packet is ICMP not meant for us, need to forward it.
-      ip_packet->ip_ttl--;  
-      //if the time to live is 0... we send an icmp
+      ip_packet->ip_ttl--; 
       if (ip_packet->ip_ttl ==0){
         send_times_up(ip_packet->ip_src,packet, sr);
+      }else{
+        rtl = rtable_look_up(sr, arp_packet);
+        if (rtl !=0){
+            if (sr_arpcache_lookup(sr->cache, uint32_t rtl->ip){
+              int size = 32+20+8+28;
+              sr_send_packet(sr, packet, size, sr->if_list);
+
+            }else{
+              sr_arpcache_sweepreqs(sr);
+            }
+        }else {//no match on routing table... 
+          send_host_unreachable(ip_packet->ip_src, packet, sr);
+        }
       }
-      int size = 32+20+8+28;
-      sr_send_packet(sr, packet, size, sr->if_list);
-}
     }
-
   }
-
 }/* end sr_ForwardPacket */
 
