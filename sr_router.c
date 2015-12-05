@@ -183,9 +183,6 @@ void sr_handlepacket(struct sr_instance* sr,
               int size = 32+20+8+28;
               sr_send_packet(sr, packet, size, sr->if_list);
 
-            }else{
-              sr_arpcache_sweepreqs(sr);
-            }
         }else {//no match on routing table... 
           send_host_unreachable(ip_packet->ip_src, packet, sr);
         }
