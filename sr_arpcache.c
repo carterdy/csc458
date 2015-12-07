@@ -80,7 +80,7 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
 }
 
 /* Look through the routing table and see if there is any prefix matched */
-struct rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req)={
+struct sr_rt rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req){
     struct sr_rt* cur;
     struct sr_rt* matched;
     int longest = 0;
@@ -90,8 +90,8 @@ struct rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req)={
     while (cur){
         if ((cur->dest.s_addr & cur->mask.s_addr) == (arp_req.ip & cur->mask.s_addr)) {
             if (longest <= cur->mask.s_addr) {
-                matched = cur
-                longest <= cur->mask.s_addr
+                matched = cur;
+                longest <= cur->mask.s_addr;
 
             }
 
