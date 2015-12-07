@@ -262,7 +262,7 @@ void send_times_up(uint8_t source_addr, sr_packet *packet, struct sr_instance *s
   
   //Now have to form the ip packet to encase the icmp content
   sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(buf + sizeof(sr_ethernet_hdr_t));
-  ip_packet->ip_p = 1;
+  ip_packet->ip_p = 11;
   ip_packet->ip_tos;            /* type of service */
   ip_packet->ip_len;            /* total length */
   ip_packet->ip_id;         /* identification */
