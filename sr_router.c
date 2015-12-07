@@ -174,18 +174,24 @@ void sr_handlepacket(struct sr_instance* sr,
 
     }else { //If packet is ICMP not meant for us, need to forward it.
         rtl = rtable_look_up(sr, arp_packet);
-        if (rtl !=0){
-            if (sr_arpcache_lookup(sr->cache, uint32_t rtl->ip){
+
+        if (rtl !=0){//find on the routing table.. forward it
+            ip_packet->ip_ttl--; 
+            if (ip_packet->ip_ttl ==0){
+                 send_times_up(ip_packet->ip_src,packet, sr);
+            }else{
+              if (sr_arpcache_lookup(sr->cache, uint32_t rtl->ip){//arp has the match
               int size = 32+20+8+28;
               sr_send_packet(sr, packet, size, sr->if_list);
-            }else{
-              ip_packet->ip_ttl--; 
-              if (ip_packet->ip_ttl ==0){
-                 send_times_up(ip_packet->ip_src,packet, sr);
+              }else{
+                handle_arpreq(sr, arp_req);
+
               }
             }
- 
         }else {//no match on routing table... 
+          struct sr_arpreq *arp_req;
+          int size = 32+20+8+28;
+          arp_req = sr_arpcache_queuereq(&sr->cache, rt->gw.s_addr, packet, size,  rtl->interface);
           send_host_unreachable(ip_packet->ip_src, packet, sr);
         }
       }
