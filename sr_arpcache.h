@@ -168,9 +168,24 @@ void freeArray(Array *a);
 /*  Other functions we've added */
 
 /*  Extract and return the ip address from the IP header encapsulated by the given ethernet packet.  */
-uint32_t get_ip_addr(struct sr_packet *packet);
+uint32_t get_ip_addr(uint8_t *packet);
 
 /*  Extract and return the ethernet address from the given ethernet packet.  */
 uint32_t get_ether_addr(struct sr_packet *packet);
+
+/*
+  Send a host unreachable ICMP to the given source address
+*/
+void send_host_unreachable(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr);
+
+/*
+  Send a timeout ICMP message to the given source address
+*/
+void send_times_up(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr);
+
+/*
+  Send an echo reply to the given source address
+*/
+void send_echo_reply(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr);
 
 #endif

@@ -131,7 +131,7 @@ void notify_sources_badreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
         uint8_t source[ETHER_ADDR_LEN] = get_ether_source(packet);
         /*Check to make sure we haven't sent to this source yet*/
         if (!array_contains(sources, source)){
-          send_host_runreachable(source, packet);
+          send_host_runreachable(source, packet->buf);
           insertArray(&sources, source);
         }
         free(&source);
@@ -141,7 +141,7 @@ void notify_sources_badreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
 }
 
 /*  Extract and return the ip address from the IP header encapsulated by the given ethernet packet.  */
-uint32_t get_ip_addr(sr_packet *packet){
+uint32_t get_ip_addr(uint8_t *packet){
   /*We know that the ethernet header is 32 bytes long, and the source address in the IP header is at the 12th octet*/
   uint32_t address;
   address = (uint32_t)(packet->buf[32+12*8]);
@@ -152,8 +152,7 @@ uint32_t get_ip_addr(sr_packet *packet){
 /*
   Send a host unreachable ICMP to the given source address
 */
-void send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr){
-  /* Trying to work on this - Dylan */
+void send_host_unreachable(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr){
   
   /*Allocate a buffer to hold the packet*/
   uint8_t *buf = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
@@ -166,7 +165,7 @@ void send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_ins
   icmp_packet->icmp_sum = 0;
   icmp_packet->icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
   /*Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.*/
-  memcpy(icmp_packet->data, packet->buf, ICMP_DATA_SIZE);
+  memcpy(icmp_packet->data, packet, ICMP_DATA_SIZE);
   
   /*Now have to form the ip packet to encase the icmp content*/
   sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(buf + sizeof(sr_ethernet_hdr_t));
@@ -198,8 +197,7 @@ void send_host_unreachable(uint8_t source_addr, sr_packet *packet, struct sr_ins
 /*
   Send a host unreachable ICMP to the given source address
 */
-void send_echo_reply(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr){
-  /* Trying to work on this - Dylan */
+void send_echo_reply(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr){
   
   /*Allocate a buffer to hold the packet*/
   uint8_t *buf = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t));
@@ -212,7 +210,7 @@ void send_echo_reply(uint8_t source_addr, sr_packet *packet, struct sr_instance 
   icmp_packet->icmp_sum = 0;
   icmp_packet->icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
   /*Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.*/
-  memcpy(icmp_packet->data, packet->buf, ICMP_DATA_SIZE);
+  memcpy(icmp_packet->data, packet, ICMP_DATA_SIZE);
   
   /*Now have to form the ip packet to encase the icmp content*/
   sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(buf + sizeof(sr_ethernet_hdr_t));
@@ -226,7 +224,7 @@ void send_echo_reply(uint8_t source_addr, sr_packet *packet, struct sr_instance 
   ip_packet->ip_sum;            /* checksum */
   ip_packet->ip_src = sr->if_list[0]->ip;  /*Assign the packet source to one of the router's interfaces*/
   ip_packet->ip_dst = get_ip_addr(packet);  /*set the packet destination to the original source IP*/
-  
+  memcpy((void *)arp_packet->ar_sha, (void *)sender_eth, ETHER_ADDR_LEN);
   /*Now make an ethernet frame to wrap the IP packet with the ICMP packet*/
   sr_ethernet_hdr_t *ether_packet = (sr_ethernet_hdr_t *)(buf);
   ether_packet->ether_dhost = source_addr;  /*Set ethernet destination*/
@@ -241,10 +239,9 @@ void send_echo_reply(uint8_t source_addr, sr_packet *packet, struct sr_instance 
 }
 
 /*
-  Send a host unreachable ICMP to the given source address
+  Send a timeout ICMP message to the given source address
 */
-void send_times_up(uint8_t source_addr, sr_packet *packet, struct sr_instance *sr){
-  /* Trying to work on this - Dylan */
+void send_times_up(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr){
   
   /*Allocate a buffer to hold the packet*/
   uint8_t *buf = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_hdr_t));
@@ -257,7 +254,7 @@ void send_times_up(uint8_t source_addr, sr_packet *packet, struct sr_instance *s
   icmp_packet->icmp_sum = 0;
   icmp_packet->icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
   /*Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.*/
-  memcpy(icmp_packet->data, packet->buf, ICMP_DATA_SIZE);
+  memcpy(icmp_packet->data, packet, ICMP_DATA_SIZE);
   
   /*Now have to form the ip packet to encase the icmp content*/
   sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(buf + sizeof(sr_ethernet_hdr_t));
