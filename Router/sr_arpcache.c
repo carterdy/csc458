@@ -79,13 +79,9 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
   return 1;
 }
 
-<<<<<<< HEAD:sr_arpcache.c
+
 /* Look through the routing table and see if there is any prefix matched */
 struct sr_rt rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req){
-=======
-/* Look through the routing table and see if there is any prefix matched  */
-struct rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req)={
->>>>>>> 7d33e09474e15aaa1f9192621c37e0eab5327eff:Router/sr_arpcache.c
     struct sr_rt* cur;
     struct sr_rt* matched;
     int longest = 0;
@@ -169,6 +165,7 @@ void send_host_unreachable(uint8_t source_addr, uint8_t *packet, struct sr_insta
   icmp_packet->icmp_code = 1;
   icmp_packet->icmp_sum = 0;
   icmp_packet->icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
+  print_hdr_icmp(icmp_packet);
   /*Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.*/
   memcpy(icmp_packet->data, packet, ICMP_DATA_SIZE);
   
@@ -184,12 +181,14 @@ void send_host_unreachable(uint8_t source_addr, uint8_t *packet, struct sr_insta
   ip_packet->ip_sum;			/* checksum */
   ip_packet->ip_src = sr->if_list[0]->ip;  /*Assign the packet source to one of the router's interfaces*/
   ip_packet->ip_dst = get_ip_addr(packet);	/*set the packet destination to the original source IP*/
+  print_hdr_ip(ip_packet);
   
   /*Now make an ethernet frame to wrap the IP packet with the ICMP packet*/
   sr_ethernet_hdr_t *ether_packet = (sr_ethernet_hdr_t *)(buf);
   ether_packet->ether_dhost = source_addr;  /*Set ethernet destination*/
   ether_packet->ether_shost = sr->if_list[0]->addr;  /*Set ethernet source*/
   ether_packet->ether_type = sr_ethertype.ethertype_ip;
+  print_hdr_eth(ether_packet);
   
   /*Now send off the packet*/
   int size = 32+20+8+28; /*Size of the packet. Ether header = 32, ip header = 20, ICMP header = 8, ICMP data = 28.*/
@@ -214,6 +213,7 @@ void send_echo_reply(uint8_t source_addr, uint8_t *packet, struct sr_instance *s
   icmp_packet->icmp_code = 1;
   icmp_packet->icmp_sum = 0;
   icmp_packet->icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
+  print_hdr_icmp(icmp_packet);
   /*Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.*/
   memcpy(icmp_packet->data, packet, ICMP_DATA_SIZE);
   
@@ -229,13 +229,15 @@ void send_echo_reply(uint8_t source_addr, uint8_t *packet, struct sr_instance *s
   ip_packet->ip_sum;            /* checksum */
   ip_packet->ip_src = sr->if_list[0]->ip;  /*Assign the packet source to one of the router's interfaces*/
   ip_packet->ip_dst = get_ip_addr(packet);  /*set the packet destination to the original source IP*/
+  print_hdr_ip(ip_packet);
   memcpy((void *)arp_packet->ar_sha, (void *)sender_eth, ETHER_ADDR_LEN);
   /*Now make an ethernet frame to wrap the IP packet with the ICMP packet*/
   sr_ethernet_hdr_t *ether_packet = (sr_ethernet_hdr_t *)(buf);
   ether_packet->ether_dhost = source_addr;  /*Set ethernet destination*/
   ether_packet->ether_shost = sr->if_list[0]->addr;  /*Set ethernet source*/
   ether_packet->ether_type = sr_ethertype.ethertype_ip;
-  
+  print_hdr_eth(ether_packet);
+  print_hdr_icmp(uint8_t *buf);
   /*Now send off the packet*/
   int size = 32+20+8+28; /*Size of the packet. Ether header = 32, ip header = 20, ICMP header = 8, ICMP data = 28.*/
   sr_send_packet(sr, buf, size, sr->if_list);
@@ -254,16 +256,17 @@ void send_times_up(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr)
   /*Create and send the host unreachable ICMP TO source, telling them that dest was unreachable*/
   /*First have to create the ICMP packet*/
   sr_icmp_t3_hdr_t *icmp_packet = (sr_icmp_hdr_t *)(buf + sizeof(sr_ip_hdr_t) + sizeof(sr_ethernet_hdr_t));
-  icmp_packet->icmp_type = 1;
+  icmp_packet->icmp_type = 11;
   icmp_packet->icmp_code = 1;
   icmp_packet->icmp_sum = 0;
   icmp_packet->icmp_sum = cksum((const void *)(icmp_packet.icmp_type + icmp_packet.icmp_code), 2);
+  print_hdr_icmp(icmp_packet);
   /*Have to craft data.  Data will be the original packet header plus the first 8 bytes of the packet content.*/
   memcpy(icmp_packet->data, packet, ICMP_DATA_SIZE);
   
   /*Now have to form the ip packet to encase the icmp content*/
   sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(buf + sizeof(sr_ethernet_hdr_t));
-  ip_packet->ip_p = 11;
+  ip_packet->ip_p = 1;
   ip_packet->ip_tos;            /* type of service */
   ip_packet->ip_len;            /* total length */
   ip_packet->ip_id;         /* identification */
@@ -273,13 +276,14 @@ void send_times_up(uint8_t source_addr, uint8_t *packet, struct sr_instance *sr)
   ip_packet->ip_sum;            /* checksum */
   ip_packet->ip_src = sr->if_list[0]->ip;  /*Assign the packet source to one of the router's interfaces*/
   ip_packet->ip_dst = get_ip_addr(packet);  /*set the packet destination to the original source IP*/
+  print_hdr_ip(ip_packet);
   
   /*Now make an ethernet frame to wrap the IP packet with the ICMP packet*/
   sr_ethernet_hdr_t *ether_packet = (sr_ethernet_hdr_t *)(buf);
   ether_packet->ether_dhost = source_addr;  /*Set ethernet destination*/
   ether_packet->ether_shost = sr->if_list[0]->addr;  /*Set ethernet source*/
   ether_packet->ether_type = sr_ethertype.ethertype_ip;
-  
+  print_hdr_eth(ether_packet);
   /*Now send off the packet*/
   int size = 32+20+8+28; /*Size of the packet. Ether header = 32, ip header = 20, ICMP header = 8, ICMP data = 28.*/
   sr_send_packet(sr, buf, size, sr->if_list);
@@ -293,8 +297,8 @@ int boardcast_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
     /*first package the arp package header first...*/
     o_interface = sr_get_interface(sr, arp_req->packets->iface);
     struct sr_arp_hdr arp_hdr;
-    int *arp_package;
-    int *e_pack;
+    uint8_t *arp_package;
+    uint8_t *e_pack;
     arp_hdr.ar_hrd = sr_arp_hrd_fmt hfmt = arp_hrd_ethernet;             /* format of hardware address   */
     arp_hdr.ar_pro = 0X800;            /*from http:/*www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length*/
     arp_hdr.ar_hln = ETHER_ADDR_LEN = 8; /*from http:/*www.networksorcery.com/enp/protocol/arp.htm#Protocol%20address%20length*/
@@ -306,9 +310,11 @@ int boardcast_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
     arp_hdr.ar_tip = arp_req.ip;                 /* target IP address            */
     /*copy everything into the arp_header*/
     arp_package = malloc(sizeof(sr_arp_hdr_t));
+    print_hdr_arp(arp_package);
     memcpy(arp_package, &apr_hdr, sizeof(sr_arp_hdr_t));
     /*then package the ethernet header along with the arp header...*/
     e_pack = eth_hdr_package(uint8_t  ether_dhost, sr, o_interface->addr, arp_package, sizeof(struct sr_arp_hdr));
+    print_hdr_eth(e_pack);
 
     /*send it out*/
     sr_send_packet(sr, e_pack, sizeof(struct sr_arp_hdr) + sizeof(struct sr_ethernet_hdr), o_interface);
@@ -316,8 +322,8 @@ int boardcast_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
 
 
 /* build the ethernet frame to be broadcast */
-int eth_hdr_package(uint8_t  ether_dhost, uint8_t  ether_shost, uint16_t ether_type, int *content, int len){
-    int *output;
+int eth_hdr_package(uint8_t  ether_dhost, uint8_t  ether_shost, uint16_t ether_type, uint8_t *content, int len){
+    uint8_t *output;
     int total_length;
     struct sr_ethernet_hdr e_hdr;
     /*first step is to create a ethernet header...*/
