@@ -79,8 +79,13 @@ int handle_arpreq(struct sr_instance *sr, struct sr_arpreq *arp_req){
   return 1;
 }
 
+<<<<<<< HEAD:sr_arpcache.c
 /* Look through the routing table and see if there is any prefix matched */
 struct sr_rt rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req){
+=======
+/* Look through the routing table and see if there is any prefix matched  */
+struct rtable_look_up(struct sr_instance *sr, struct sr_arpreq *arp_req)={
+>>>>>>> 7d33e09474e15aaa1f9192621c37e0eab5327eff:Router/sr_arpcache.c
     struct sr_rt* cur;
     struct sr_rt* matched;
     int longest = 0;
