@@ -12,11 +12,13 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 
-/* we dont like this debug , but what to do for varargs ? */
+/* we dont like this debug, but what to do for varargs ? */
 #ifdef _DEBUG_
 #define Debug(x, args...) printf(x, ## args)
 #define DebugMAC(x) \
