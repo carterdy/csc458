@@ -133,7 +133,12 @@ void sr_handlepacket(struct sr_instance* sr,
   /*it is ARP...*/
   if (ethertype(packet)== ethertype_arp ){
     /*First lets extract the ARP packet*/
+    printf("Recevied packet and we think it is ARP\n");
+    printf("Ether header:\n"); 
+    print_hdr_eth(packet); /*for debugging */
     sr_arp_hdr_t *arp_packet = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+    printf("ARP header:\n");
+    print_hdr_arp((uint8_t *)arp_packet); /* debugging */
   
     /*If it is a broadcast ARP request and we have the IP, send a reply. Otherwise ignore.*/
     if (arp_packet->ar_op == arp_op_request && (strcmp((char *)arp_packet->ar_tha, "0xffffffffffff") == 0 )) {
@@ -144,6 +149,8 @@ void sr_handlepacket(struct sr_instance* sr,
         /*Generate and send ARP reply*/
         struct sr_if* found_if = sr_get_interface(sr, if_name);
         uint8_t *arp_reply = sr_create_arp_reply(found_if->addr, found_if->ip, arp_packet->ar_sha, arp_packet->ar_sip);
+        printf("We sending off this ARP reply:\n");
+        print_hdr_arp(arp_reply);
         sr_send_packet(sr, arp_reply, sizeof(arp_reply), interface);  /*Send off the packet*/
       }
     } else if (arp_packet->ar_op == arp_op_reply) {
@@ -159,6 +166,10 @@ void sr_handlepacket(struct sr_instance* sr,
   }else if (ethertype(packet)== ethertype_ip ){/*it is ip...*/
     /*Check if packet is ICMP echo.  If it is echo for us need to create and send reply.*/
     sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+    printf("We think the packet is IP. Packet header: \n");
+    print_hdr_eth(packet);
+    printf("IP header:\n");
+    print_hdr_ip((uint8_t *)ip_packet);
     
     /*If it is echo not for us, need to forward to destination*/
     
@@ -172,7 +183,6 @@ void sr_handlepacket(struct sr_instance* sr,
       /*If packet is TCP/UDP need to reply with host unreachable*/
         send_host_unreachable(ip_packet->ip_src, packet, sr);
       }
-
     }else { /*If packet is ICMP not meant for us, need to forward it.*/
       ip_packet->ip_ttl--;
       /*if the time to live is 0... we send an icmp*/
@@ -180,6 +190,8 @@ void sr_handlepacket(struct sr_instance* sr,
         send_times_up(ip_packet->ip_src,packet, sr);
       }
       int size = 32+20+8+28;
+      printf("We think packet is not for us. Forwarding:\n");
+      print_hdr_ip(packet);
       sr_send_packet(sr, packet, size, sr->if_list->name);
       }
     }
